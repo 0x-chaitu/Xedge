@@ -13,4 +13,6 @@ type Driver interface {
 	ReadValues(info interface{}) ([]byte, error)
 
 	SetConnectionInfo(info *client.ConnectionInfo)
+
+	// GetConnectionId() int
 }
