@@ -19,7 +19,7 @@ func (s *Service) putSubscription(key string, subscription *Subscription) {
 	s.subscriptions[key] = subscription
 }
 
-func (s *Service) getSubscription(key string) (*Subscription, error) {
+func (s *Service) GetSubscription(key string) (*Subscription, error) {
 	return s.subscriptions[key], nil
 }
 
@@ -38,17 +38,6 @@ func (s *Service) Updates() <-chan Feed {
 func (s *Service) StartService() {
 	var err error
 	var feeds []Feed
-
-	go func() {
-		for _, sub := range s.subscriptions {
-			go func(sub *Subscription) {
-				for range sub.C {
-					s.ticker <- sub
-				}
-			}(sub)
-		}
-
-	}()
 
 	for {
 		var first Feed
@@ -73,4 +62,13 @@ func (s *Service) StartService() {
 			feeds = feeds[1:]
 		}
 	}
+}
+
+func (s *Service) RestartAggregation() {
+	for _, sub := range s.subscriptions {
+		go func(sub *Subscription) {
+			sub.aggTicksIn(s)
+		}(sub)
+	}
+
 }

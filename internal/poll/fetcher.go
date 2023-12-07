@@ -10,7 +10,7 @@ type Fetcher interface {
 }
 
 func (cp *Subscription) Fetch() (feeds []Feed, err error) {
-	data, err := cp.ReadValues(cp.cmd)
+	data, err := cp.client.ReadValues(cp.cmd)
 	if err != nil {
 		log.Println(err)
 	}

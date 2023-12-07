@@ -39,8 +39,8 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	subsriptionService.NewSubcription(modbusDevice, cmd, 3*time.Second)
 	go subsriptionService.StartService()
+	subsriptionService.NewSubcription(modbusDevice, cmd, 3*time.Second)
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	defer close(ch)
@@ -52,6 +52,14 @@ func main() {
 				}
 			}()
 			time.Sleep(2 * time.Second)
+		}
+	}()
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		s, _ := subsriptionService.GetSubscription("")
+		if s != nil {
+			subsriptionService.UnSubscribe(s)
 		}
 	}()
 

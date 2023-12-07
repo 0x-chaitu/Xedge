@@ -15,12 +15,54 @@ type SubscriptionService interface {
 }
 
 type Subscription struct {
-	driver.Driver
-	cmd *modbus.CommandInfo
-	*time.Ticker
+	*poller
+	cmd        *modbus.CommandInfo
+	pollsEvery *time.Ticker
+	stopped    chan bool
 }
 
-func (s *Service) NewSubcription(driver driver.Driver, cmd *modbus.CommandInfo, pollEvery time.Duration) {
+func (s *Service) NewSubcription(driver driver.Driver, cmd *modbus.CommandInfo, pollEvery time.Duration) bool {
 	ticker := time.NewTicker(pollEvery)
-	s.putSubscription("", &Subscription{Driver: driver, cmd: cmd, Ticker: ticker})
+	stopped := make(chan bool, 1)
+	poller := newPoller(driver)
+	newSub := &Subscription{poller: poller, cmd: cmd, pollsEvery: ticker, stopped: stopped}
+	err := newSub.subscribe()
+	if err != nil {
+		return false
+	}
+
+	go newSub.aggTicksIn(s)
+
+	s.putSubscription("", newSub)
+	return false
+}
+
+func (s *Subscription) subscribe() error {
+	err := s.connect()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// aggregates individaul subscription ticks into service's ticker channel
+func (sub *Subscription) aggTicksIn(s *Service) {
+	for {
+		select {
+		case <-sub.pollsEvery.C:
+			s.ticker <- sub
+		case <-sub.stopped:
+			return
+		}
+	}
+}
+
+func (*Service) UnSubscribe(s *Subscription) bool {
+	if err := s.disConnect(); err != nil {
+		return false
+	}
+	s.pollsEvery.Stop()
+	close(s.stopped)
+	return true
+
 }
