@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	devicefactory "xedge/container/deviceFactory"
 	edgecontainer "xedge/container/edgeContainer"
 	"xedge/internal/poll"
+	"xedge/server/router"
 	"xedge/tool/client"
 	"xedge/tool/client/driver"
 	"xedge/tool/client/modbus"
@@ -20,7 +20,7 @@ func main() {
 	container := edgecontainer.EdgeContainer{FactoryMap: make(map[string]interface{})}
 	subsriptionService, _ := poll.NewSubscriptionService()
 
-	config, err := client.NewConnectionInfo(3*time.Second, 1, "127.0.0.1:502")
+	config, err := client.NewConnectionInfo(3*time.Second, 1, "192.168.0.105:502")
 	if err != nil {
 		log.Println(err)
 	}
@@ -29,7 +29,7 @@ func main() {
 	cmd.StartingAddress = 0
 	cmd.TotalAddress = 1
 
-	md, err := devicefactory.GetDeviceFactoryBuilder("modbus").Build(&container)
+	md, err := container.BuildUseCase("modbus")
 	if err != nil {
 		fmt.Println(err, md)
 	}
@@ -57,12 +57,16 @@ func main() {
 
 	go func() {
 		time.Sleep(5 * time.Second)
-		s, _ := subsriptionService.GetSubscription("")
-		if s != nil {
-			subsriptionService.UnSubscribe(s)
-		}
+		// s, _ := subsriptionService.GetSubscription("")
+		// if s != nil {
+		// 	subsriptionService.UnSubscribe(s)
+		// }
 	}()
 
+	r := router.NewRouter()
+	r.RunServer()
+
+	log.Println(1)
 	<-ch
 	subsriptionService.Close()
 

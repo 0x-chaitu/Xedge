@@ -27,6 +27,7 @@ func (s *Service) GetSubscription(key string) (*Subscription, error) {
 func (s *Service) Close() error {
 	errc := make(chan error)
 	s.closing <- errc
+	close(s.ticker)
 	return <-errc
 }
 
